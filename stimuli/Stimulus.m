@@ -8,7 +8,6 @@ classdef Stimulus < handle
     color;
     vertices;
     last_frame_timer = NaN;
-    is_blinking = false;
     should_blink = false;
     should_show = true;
     blink_rate = NaN;
