@@ -102,21 +102,8 @@ classdef Rectangle < Stimulus
       %     IN:
       %       - `func` (char) -- Function name to pass to Screen()
       
-      should_draw_rect = true;
-      if ( obj.should_blink )
-        if ( isnan(obj.last_frame_timer) )
-          obj.is_blinking = false;
-          obj.last_frame_timer = tic;
-        else
-          delta = toc( obj.last_frame_timer );
-          if ( delta >= obj.blink_rate )
-            obj.is_blinking = ~obj.is_blinking;
-            obj.last_frame_timer = tic;
-          end
-        end
-        should_draw_rect = ~obj.is_blinking;
-      end
-      if ( should_draw_rect )
+      obj.blink_check();
+      if ( obj.should_show )
         Screen( func, obj.window, obj.color, obj.vertices );
       end
     end

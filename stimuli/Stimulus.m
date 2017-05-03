@@ -10,6 +10,7 @@ classdef Stimulus < handle
     last_frame_timer = NaN;
     is_blinking = false;
     should_blink = false;
+    should_show = true;
     blink_rate = NaN;
     targets = {};
   end
@@ -112,6 +113,26 @@ classdef Stimulus < handle
       %   STOP_BLINK -- Stop the stimulus from blinking.
       
       obj.should_blink = false;
+    end
+    
+    function blink_check(obj)
+      
+      %   BLINK_CHECK -- Update whether the object should be displayed.
+      
+      if ( ~obj.should_blink )
+        obj.should_show = true;
+        return;
+      end
+      if ( isnan(obj.last_frame_timer) )
+        obj.should_show = true;
+        obj.last_frame_timer = tic;
+      else
+        delta = toc( obj.last_frame_timer );
+        if ( delta >= obj.blink_rate )
+          obj.should_show = ~obj.should_show;
+          obj.last_frame_timer = tic;
+        end
+      end
     end
     
     %{
