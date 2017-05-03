@@ -7,6 +7,10 @@ classdef Stimulus < handle
     placement;
     color;
     vertices;
+    last_frame_timer = NaN;
+    is_blinking = false;
+    should_blink = false;
+    blink_rate = NaN;
     targets = {};
   end
   
@@ -85,6 +89,29 @@ classdef Stimulus < handle
       %         fixation targets in the object.
       
       tf = cellfun( @(x) x.duration_met(), obj.targets );
+    end
+    
+    %{
+        DRAW
+    %}
+    
+    function blink(obj, rate)
+      
+      %   BLINK -- Set the stimulus to blink at a given rate.
+      %
+      %     IN:
+      %       - `rate` (double) -- Number specifying the interval between
+      %         draw-calls, in seconds.
+      
+      obj.should_blink = true;
+      obj.blink_rate = rate;      
+    end
+    
+    function stop_blink(obj)
+      
+      %   STOP_BLINK -- Stop the stimulus from blinking.
+      
+      obj.should_blink = false;
     end
     
     %{

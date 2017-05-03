@@ -95,18 +95,44 @@ classdef Rectangle < Stimulus
         DISPLAY
     %}
     
+    function show(obj, func)
+      
+      %   SHOW -- Display the rectangle as a frame or filled rect.
+      %
+      %     IN:
+      %       - `func` (char) -- Function name to pass to Screen()
+      
+      should_draw_rect = true;
+      if ( obj.should_blink )
+        if ( isnan(obj.last_frame_timer) )
+          obj.is_blinking = false;
+          obj.last_frame_timer = tic;
+        else
+          delta = toc( obj.last_frame_timer );
+          if ( delta >= obj.blink_rate )
+            obj.is_blinking = ~obj.is_blinking;
+            obj.last_frame_timer = tic;
+          end
+        end
+        should_draw_rect = ~obj.is_blinking;
+      end
+      if ( should_draw_rect )
+        Screen( func, obj.window, obj.color, obj.vertices );
+      end
+    end
+    
     function draw(obj)
       
       %   DRAW -- Draw the rectangle.
       
-      Screen( 'FillRect', obj.window, obj.color, obj.vertices );      
+      obj.show( 'FillRect' );
     end
     
     function draw_frame(obj)
       
       %   DRAW_FRAME -- Draw the rectangle as a frame.
       
-      Screen( 'FrameRect', obj.window, obj.color, obj.vertices );
+      obj.show( 'FrameRect' );
     end
     
   end

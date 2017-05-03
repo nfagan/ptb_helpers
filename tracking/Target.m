@@ -3,6 +3,7 @@ classdef Target < handle
   properties
     tracker;
     bounds = [];
+    in_bounds = false;
     cumulative = 0;
     duration = [];
     timer = [];
@@ -85,8 +86,10 @@ classdef Target < handle
       if ( within_x && within_y )
         delta = toc( obj.timer ) - obj.last_frame;
         obj.cumulative = obj.cumulative + delta;
+        obj.in_bounds = true;
       else
         obj.cumulative = 0;
+        obj.in_bounds = false;
       end
       obj.last_frame = toc( obj.timer );
     end

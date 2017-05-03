@@ -33,6 +33,7 @@ classdef EyeTracker < handle
       %     OUT:
       %       - `success` (true, false)
       
+      success = true;
       if ( obj.bypass ), return; end;
       obj.assert__edf_is_defined();
       success = EyelinkInit();
