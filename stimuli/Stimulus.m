@@ -103,8 +103,12 @@ classdef Stimulus < handle
       %       - `rate` (double) -- Number specifying the interval between
       %         draw-calls, in seconds.
       
-      obj.should_blink = true;
-      obj.blink_rate = rate;      
+      if ( rate > 0 )
+        obj.should_blink = true;
+        obj.blink_rate = rate;
+      else
+        obj.should_blink = false;
+      end
     end
     
     function stop_blink(obj)
