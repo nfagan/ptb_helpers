@@ -6,6 +6,7 @@ classdef Stimulus < handle
     window_center = [];
     placement;
     color;
+    pen_width = 1;
     vertices;
     last_frame_timer = NaN;
     should_blink = false;
@@ -89,6 +90,18 @@ classdef Stimulus < handle
       %         fixation targets in the object.
       
       tf = cellfun( @(x) x.duration_met(), obj.targets );
+    end
+    
+    function tf = in_bounds(obj)
+      
+      %   IN_BOUNDS -- Return whether, for each target, the gaze is within
+      %     the target bounds.
+      %
+      %     OUT:
+      %       - `tf` (logical) -- 1xN vector where N is the number of
+      %         fixation targets in the object.
+      
+      tf = cellfun( @(x) x.in_bounds, obj.targets );
     end
     
     %{

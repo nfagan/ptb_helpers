@@ -1,7 +1,6 @@
 classdef Image < Rectangle
   
   properties
-    filename;
     image;
   end
   
@@ -30,8 +29,11 @@ classdef Image < Rectangle
       
       %   DRAW -- Display the image.
       
-      texture = Screen( 'MakeTexture', obj.window, obj.image );
-      Screen( 'DrawTexture', obj.window, texture, [], obj.vertices );
+      obj.blink_check();
+      if ( obj.should_show )
+        texture = Screen( 'MakeTexture', obj.window, obj.image );
+        Screen( 'DrawTexture', obj.window, texture, [], obj.vertices );
+      end
     end
   end
     

@@ -20,7 +20,7 @@ classdef Rectangle < Stimulus
       obj = obj@Stimulus( window, wrect );
       obj.len = dims(1);
       obj.width = dims(2);
-      obj.vertices = zeros( 1, 4 );
+      obj.vertices = [ 0, 0, dims(1), dims(2) ];
     end
     
     %{
@@ -95,7 +95,7 @@ classdef Rectangle < Stimulus
         DISPLAY
     %}
     
-    function show(obj, func)
+    function show(obj, func, varargin)
       
       %   SHOW -- Display the rectangle as a frame or filled rect.
       %
@@ -104,7 +104,7 @@ classdef Rectangle < Stimulus
       
       obj.blink_check();
       if ( obj.should_show )
-        Screen( func, obj.window, obj.color, obj.vertices );
+        Screen( func, obj.window, obj.color, obj.vertices, varargin{:} );
       end
     end
     
@@ -119,7 +119,7 @@ classdef Rectangle < Stimulus
       
       %   DRAW_FRAME -- Draw the rectangle as a frame.
       
-      obj.show( 'FrameRect' );
+      obj.show( 'FrameRect', obj.pen_width );
     end
     
   end
