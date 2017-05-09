@@ -151,6 +151,13 @@ classdef Stimulus < handle
       end
     end
     
+    function reset_blink(obj)
+      
+      %   RESET_BLINK -- Reset the last frame timer.
+      
+      obj.last_frame_timer = NaN;
+    end
+    
     %{
         ASSERTIONS
     %}
