@@ -27,6 +27,22 @@ classdef Timer < handle
       obj.reset_timers( ids );
     end
     
+    function register(obj, s)
+      
+      %   REGISTER -- Add multiple timers at once.
+      %
+      %     IN:
+      %       - `s` (struct) -- Structure whose fieldnames become timer
+      %         ids, and whose fields are the durations associated with
+      %         each id.
+      
+      obj.assert__isa( s, 'struct', 'timer struct' );
+      fs = fieldnames( s );
+      for i = 1:numel(fs)
+        obj.add_timer( fs{i}, s.(fs{i}) );
+      end
+    end
+    
     function add_timer(obj, id, duration)
       
       %   ADD_TIMER -- Add a new timer.
