@@ -79,7 +79,7 @@ classdef EyeTracker < handle
       x = 0;
       y = 0;
       if ( obj.bypass )
-        [x, y] = GetMouse();
+        [x, y] = GetMouse( obj.window );
         success = true;
         return;
       end
