@@ -45,6 +45,20 @@ classdef EyeTracker < handle
       Eyelink( 'StartRecording' );
     end
     
+    function status = send(obj, msg)
+      
+      %   SEND -- Send a message to Eyelink.
+      %
+      %     IN:
+      %       - `msg` (char)
+      %     OUT:
+      %       - `status` (double) -- 0 if success, -1 if error.
+      
+      if ( obj.bypass ), status = 0; return; end;
+      obj.assert__isa( msg, 'char', 'the to-be-sent message' );
+      status = Eyelink( 'Message', msg );
+    end
+    
     function tf = new_gaze_ready(obj)
       
       %   NEW_GAZE_READY -- Return whether new gaze samples are available.
