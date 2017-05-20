@@ -3,6 +3,7 @@ classdef Target < handle
   properties
     tracker;
     bounds = [];
+    padding = [ 0, 0, 0, 0 ];
     in_bounds = false;
     cumulative = 0;
     duration = [];
@@ -61,6 +62,27 @@ classdef Target < handle
       obj.bounds = val;
     end
     
+    function set.padding(obj, pad)
+      
+      %   SET.PADDING -- Validate and update the padding property.
+      %
+      %     If padding is a scalar value, it will be applied evenly to +/-
+      %     x and +/- y. Otherwise, specify padding as a 4-element vector
+      %     to control +/- x and +/- y individually.
+      %
+      %     IN:
+      %       - `pad` (double) -- 4-element vector or scalar.
+      
+      obj.assert__isa( pad, 'double', 'the target padding' );
+      if ( numel(pad) == 1 )
+        pad = [ -pad, -pad, pad, pad ];
+      else
+        assert( numel(pad) == 4, ['Paddding must be specified as a' ...
+          , ' 4-element vector or a scalar.'] );
+      end
+      obj.padding = pad;
+    end
+    
     %{
         CUMULATIVE GAZE HANDLING
     %}
@@ -80,7 +102,7 @@ classdef Target < handle
       end
       x = obj.tracker.coordinates(1);
       y = obj.tracker.coordinates(2);
-      gaze_bounds = obj.bounds;      
+      gaze_bounds = obj.bounds + obj.padding;
       within_x = x >= gaze_bounds(1) && x < gaze_bounds(3);
       within_y = y >= gaze_bounds(2) && y < gaze_bounds(4);
       if ( within_x && within_y )
