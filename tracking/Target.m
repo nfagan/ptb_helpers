@@ -4,6 +4,8 @@ classdef Target < handle
     tracker;
     bounds = [];
     padding = [ 0, 0, 0, 0 ];
+    x_offset = 0;
+    y_offset = 0;
     in_bounds = false;
     cumulative = 0;
     duration = [];
@@ -102,7 +104,10 @@ classdef Target < handle
       end
       x = obj.tracker.coordinates(1);
       y = obj.tracker.coordinates(2);
-      gaze_bounds = obj.bounds + obj.padding;
+      x_off = obj.x_offset;
+      y_off = obj.y_offset;
+      offsets = [ x_off, y_off, x_off, y_off ];
+      gaze_bounds = obj.bounds + obj.padding + offsets;
       within_x = x >= gaze_bounds(1) && x < gaze_bounds(3);
       within_y = y >= gaze_bounds(2) && y < gaze_bounds(4);
       if ( within_x && within_y )
