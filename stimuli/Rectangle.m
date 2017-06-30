@@ -15,11 +15,13 @@ classdef Rectangle < Stimulus
       %       - `wrect` (double) -- 4-element vector specifying the window
       %         dimensions.
       %       - `dims` (double) -- 2-element vector specifying the [length,
-      %         width] of the rectangle.
+      %         width] of the rectangle, or scalar value specifying the
+      %         length of the square.
       
       obj = obj@Stimulus( window, wrect );
+      if ( numel(dims) == 1 ), dims = [ dims, dims ]; end;
       obj.len = dims(1);
-      obj.width = dims(2);
+      obj.width = dims(2);      
       obj.vertices = [ 0, 0, dims(1), dims(2) ];
     end
     
