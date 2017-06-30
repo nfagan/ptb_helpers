@@ -87,7 +87,7 @@ classdef EyeTracker < handle
       persistent el;
       if ( ~obj.bypass && isempty(eye_used) )
         eye_used = -1;
-        el = EyelinkInitDefaults( obj.window );
+        el = EyelinkInitDefaults();
       end
       success = false;
       x = 0;
