@@ -156,6 +156,17 @@ classdef Target < handle
       shift_vec = [ dx, dy, dx, dy ];
       obj.bounds = obj.bounds + shift_vec;    
     end
+    
+    %{
+        UTIL
+    %}
+    
+    function tf = isempty(obj)
+      
+      %   ISEMPTY -- Return false, the object is not an empty matrix.
+      
+      tf = false;
+    end
   
     %{
         ASSERTIONS

@@ -20,8 +20,8 @@ classdef Rectangle < Stimulus
       
       obj = obj@Stimulus( window, wrect );
       if ( numel(dims) == 1 ), dims = [ dims, dims ]; end;
-      obj.len = dims(1);
-      obj.width = dims(2);      
+      obj.len = dims(2);
+      obj.width = dims(1);
       obj.vertices = [ 0, 0, dims(1), dims(2) ];
     end
     
@@ -45,6 +45,44 @@ classdef Rectangle < Stimulus
       obj.vertices = verts;
     end
     
+    function scale(obj, by)
+      
+      %   SCALE -- Increase the vertices by a scaled amount.
+      %
+      %     IN:
+      %       - `by` (double);
+      
+      if ( numel(by) == 1 )
+        by = [ by, by ]; 
+      else
+        assert( numel(by) == 2, ['Expected the scale factor to have' ... 
+          , ' 1 or 2 elements; %d were given'], numel(by) );
+      end
+      verts = obj.vertices;
+      obj.width = obj.width * by(1);
+      obj.len = obj.len * by(2);
+      x = verts(1) + ((verts(3) - verts(1)) / 2);
+      y = verts(2) + ((verts(4) - verts(2)) / 2);
+      obj.center_on( [x, y] );
+    end
+    
+    function center_on(obj, coord)
+      
+      %   CENTER_ON -- Center the Rectangle on a given point.
+      %
+      %     IN:
+      %       - `coord` (double) -- 2-element (x, y)
+      
+      assert( numel(coord) == 2, ['Expected the coordinate to have 2' ...
+        , 'elements; %d were given'], numel(coord) );
+      x1 = coord(1) - obj.width/2;
+      y1 = coord(2) - obj.len/2;
+      x2 = coord(1) + obj.width/2;
+      y2 = coord(2) + obj.len/2;
+      new_verts = [ x1, y1, x2, y2 ];
+      obj.vertices = new_verts;
+    end
+    
     function put(obj, placement)
       
       %   PUT -- Put the object in a given location.
@@ -57,6 +95,7 @@ classdef Rectangle < Stimulus
       y_size = obj.len;
       x_size = obj.width;      
       center = obj.window_center;
+      win_rect = obj.window_rect;
       position = round( [-x_size/2, -y_size/2, x_size/2, y_size/2] );
 
       switch ( placement )
@@ -71,6 +110,11 @@ classdef Rectangle < Stimulus
           dx = center(1) + center(1)/2;
           dy = center(2);
           bounds = [ dx, dy, dx, dy ] + position;
+        case 'top-left'
+          bounds = [ 0, 0, x_size, y_size ];
+        case 'top-right'
+          win_width = win_rect(3);
+          bounds = [ win_width-x_size, 0, win_width, y_size ];
         otherwise
           error( 'Unrecognized object placement ''%s''', placement );
       end
