@@ -143,6 +143,18 @@ classdef EyeTracker < handle
       err = Eyelink( 'CheckRecording' );
     end
     
+    function send_message(obj, msg)
+      
+      %   SEND_MESSAGE -- Send a message to Eyelink.
+      %
+      %     IN:
+      %       - `msg` (char)
+      
+      if ( obj.bypass ), return; end
+      assert( ischar(msg), 'Message must be a char.' );
+      Eyelink( 'SendMessage', msg );
+    end
+    
     function shutdown(obj)
       
       %   SHUTDOWN -- Stop recording and close the EyeLink connection.
