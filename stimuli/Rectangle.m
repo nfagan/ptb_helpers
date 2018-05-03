@@ -15,11 +15,13 @@ classdef Rectangle < Stimulus
       %       - `wrect` (double) -- 4-element vector specifying the window
       %         dimensions.
       %       - `dims` (double) -- 2-element vector specifying the [length,
-      %         width] of the rectangle.
+      %         width] of the rectangle, or scalar value specifying the
+      %         length of the square.
       
       obj = obj@Stimulus( window, wrect );
-      obj.len = dims(1);
-      obj.width = dims(2);
+      if ( numel(dims) == 1 ), dims = [ dims, dims ]; end;
+      obj.len = dims(2);
+      obj.width = dims(1);
       obj.vertices = [ 0, 0, dims(1), dims(2) ];
     end
     
@@ -51,6 +53,15 @@ classdef Rectangle < Stimulus
       %       - `x` (double)
       %       - `y` (double)
       
+      if ( nargin == 2 )
+        if ( numel(x) == 1 )
+          y = x;
+        else
+          assert( numel(x) == 2, 'Specify coordinate at 2-element vector.' );
+          y = x(2);
+          x = x(1);
+        end
+      end
       y_size = obj.len;
       x_size = obj.width;      
       position = round( [-x_size/2, -y_size/2, x_size/2, y_size/2] );
@@ -76,6 +87,13 @@ classdef Rectangle < Stimulus
     
     function randomize_from_center(obj, eccentricity, center_offset)
       
+      %   RANDOMIZE_FROM_CENTER -- Randomly position from center, within
+      %     eccentricity.
+      %
+      %     IN:
+      %       - `eccentricity` (double)
+      %       - `center_offset` (double) |OPTIONAL|
+      
       if ( nargin < 3 ), center_offset = 0; end
       
       center = obj.window_center;
@@ -98,6 +116,27 @@ classdef Rectangle < Stimulus
       
       obj.center_on( x, y );
     end
+      
+    function scale(obj, by)
+      
+      %   SCALE -- Increase the vertices by a scaled amount.
+      %
+      %     IN:
+      %       - `by` (double);
+      
+      if ( numel(by) == 1 )
+        by = [ by, by ]; 
+      else
+        assert( numel(by) == 2, ['Expected the scale factor to have' ... 
+          , ' 1 or 2 elements; %d were given'], numel(by) );
+      end
+      verts = obj.vertices;
+      obj.width = obj.width * by(1);
+      obj.len = obj.len * by(2);
+      x = verts(1) + ((verts(3) - verts(1)) / 2);
+      y = verts(2) + ((verts(4) - verts(2)) / 2);
+      obj.center_on( [x, y] );
+    end
     
     function put(obj, placement)
       
@@ -111,6 +150,7 @@ classdef Rectangle < Stimulus
       y_size = obj.len;
       x_size = obj.width;      
       center = obj.window_center;
+      win_rect = obj.window_rect;
       position = round( [-x_size/2, -y_size/2, x_size/2, y_size/2] );
 
       switch ( placement )
@@ -125,6 +165,11 @@ classdef Rectangle < Stimulus
           dx = center(1) + center(1)/2;
           dy = center(2);
           bounds = [ dx, dy, dx, dy ] + position;
+        case 'top-left'
+          bounds = [ 0, 0, x_size, y_size ];
+        case 'top-right'
+          win_width = win_rect(3);
+          bounds = [ win_width-x_size, 0, win_width, y_size ];
         otherwise
           error( 'Unrecognized object placement ''%s''', placement );
       end

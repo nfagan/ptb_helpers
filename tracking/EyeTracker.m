@@ -87,7 +87,7 @@ classdef EyeTracker < handle
       persistent el;
       if ( ~obj.bypass && isempty(eye_used) )
         eye_used = -1;
-        el = EyelinkInitDefaults( obj.window );
+        el = EyelinkInitDefaults();
       end
       success = false;
       x = 0;
@@ -141,6 +141,18 @@ classdef EyeTracker < handle
       err = false;
       if ( obj.bypass ), return; end
       err = Eyelink( 'CheckRecording' );
+    end
+    
+    function send_message(obj, msg)
+      
+      %   SEND_MESSAGE -- Send a message to Eyelink.
+      %
+      %     IN:
+      %       - `msg` (char)
+      
+      if ( obj.bypass ), return; end
+      assert( ischar(msg), 'Message must be a char.' );
+      Eyelink( 'SendMessage', msg );
     end
     
     function shutdown(obj)

@@ -83,9 +83,8 @@ classdef Timer < handle
       %     IN:
       %       - `id` (char)
       
-      obj.assert__isa( id, 'char', 'the timer id' );
-      obj.assert__ids_exist( id );
       ind = strcmp( obj.ids, id );
+      assert( any(ind), 'The given timer id %s doesn''t exist.', id );
       t = toc( obj.timers{ind} );
     end
     
