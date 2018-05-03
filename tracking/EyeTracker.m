@@ -139,7 +139,7 @@ classdef EyeTracker < handle
       %       - `err` (true, false) -- True if an error occurred.
       
       err = false;
-      if ( obj.bypass ), return; end;
+      if ( obj.bypass ), return; end
       err = Eyelink( 'CheckRecording' );
     end
     
@@ -147,7 +147,7 @@ classdef EyeTracker < handle
       
       %   SHUTDOWN -- Stop recording and close the EyeLink connection.
       
-      if ( obj.bypass ), return; end;
+      if ( obj.bypass ), return; end
 
       edf_filename = obj.edf;
       folder_name = obj.folder;
@@ -167,7 +167,7 @@ classdef EyeTracker < handle
       catch err
         fprintf( 'Problem receiving data file ''%s''\n', edf_filename );
         fprintf( '\n%s', err.message );
-      end      
+      end
     end
     
     %{

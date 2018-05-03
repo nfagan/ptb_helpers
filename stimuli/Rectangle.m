@@ -43,6 +43,62 @@ classdef Rectangle < Stimulus
       obj.vertices = verts;
     end
     
+    function center_on(obj, x, y)
+      
+      %   CENTER_ON -- Center the target on a given coordinate.
+      %
+      %     IN:
+      %       - `x` (double)
+      %       - `y` (double)
+      
+      y_size = obj.len;
+      x_size = obj.width;      
+      position = round( [-x_size/2, -y_size/2, x_size/2, y_size/2] );
+      position([1, 3]) = position([1, 3]) + x;
+      position([2, 4]) = position([2, 4]) + y;
+      obj.move( position );
+    end
+    
+    function randomize(obj)
+      
+      %   RANDOMIZE -- Randomly position the object.
+      
+      min_x = obj.width/2;
+      min_y = obj.len/2;
+      max_x = (obj.window_rect(3) - obj.window_rect(1)) - min_x;
+      max_y = (obj.window_rect(4) - obj.window_rect(2)) - min_y;
+      
+      x = (rand() * (max_x - min_x)) + min_x;
+      y = (rand() * (max_y - min_y)) + min_y;
+      
+      obj.center_on( x, y );
+    end
+    
+    function randomize_from_center(obj, eccentricity, center_offset)
+      
+      if ( nargin < 3 ), center_offset = 0; end
+      
+      center = obj.window_center;
+      max_eccentric = center + eccentricity;
+      
+      x = (rand() * (max_eccentric(1) - center(1)));
+      y = (rand() * (max_eccentric(2) - center(2)));
+      
+      if ( rand() > .5 )
+        x = x + center(1) + center_offset;
+      else
+        x = center(1) - x - center_offset;
+      end
+      
+      if ( rand() > .5 )
+        y = y + center(2) + center_offset;
+      else
+        y = center(2) - y - center_offset;
+      end
+      
+      obj.center_on( x, y );
+    end
+    
     function put(obj, placement)
       
       %   PUT -- Put the object in a given location.
