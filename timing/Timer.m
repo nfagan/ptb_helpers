@@ -123,6 +123,21 @@ classdef Timer < handle
       obj.durations( inds ) = durations;
     end
     
+    function timer_id = get_underlying_id(obj, name)
+      
+      %   GET_UNDERLYING_ID -- Get the timer id associated with a name.
+      %
+      %     IN:
+      %       - `name` (char)
+      %     OUT:
+      %       - `timer_id` (uint64)
+      
+      ind = strcmp( obj.ids, name );
+      assert( sum(ind) == 1, 'No timer id matched "%s".', name );
+      
+      timer_id = obj.timers{ind};
+    end
+    
     %{
         UTIL
     %}
