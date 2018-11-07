@@ -31,6 +31,11 @@ classdef Image < Rectangle
       
       obj.blink_check();
       if ( obj.should_show )
+        if ( isempty(obj.image) )
+          warning( 'Image matrix was empty.' );
+          return
+        end
+        
         texture = Screen( 'MakeTexture', obj.window, obj.image );
         Screen( 'DrawTexture', obj.window, texture, [], obj.vertices );
       end
