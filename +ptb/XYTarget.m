@@ -105,8 +105,11 @@ classdef XYTarget < handle
     last_frame = nan;
     cumulative_timer;
     
-    was_valid_sample = true;
-    missing_sample_timer;
+    last_valid_sample_timer = nan;
+    
+    last_valid_x = nan;
+    last_valid_y = nan;
+    last_valid_frame = nan;
   end
   
   methods
@@ -204,16 +207,25 @@ classdef XYTarget < handle
       if ( obj.AllowMissing && ~is_valid_sample )
         % Missing data is allowed, and this is a missing sample.
         
-        if ( obj.was_valid_sample )
-          % This is the first frame of a missing sample, so start the
-          % timer.
+        if ( ~isnan(obj.last_valid_sample_timer) )
+          current_missing_frame = toc( obj.last_valid_sample_timer );
+          elapsed_missing = current_missing_frame - obj.last_valid_frame;
           
-          obj.missing_sample_timer = tic();
+          should_test_bounds = false;
+          
+          if ( elapsed_missing <= obj.MaxMissingDuration )            
+            % If we're within the window of MaxMissingDuration, test bounds
+            % using the most-recent valid gaze position.
+            x = obj.last_valid_x;
+            y = obj.last_valid_y;
+            
+            should_test_bounds = true;
+          end
+        else
+          % No valid sample has yet been recorded, so can't re-use existing
+          % coordinates
+          should_test_bounds = false;
         end
-        
-        % If we're within the window of MaxMissingDuration, test bounds
-        % using the most-recent gaze position.
-        should_test_bounds = toc( obj.missing_sample_timer ) < obj.MaxMissingDuration;
       else
         should_test_bounds = is_valid_sample;
       end
@@ -237,7 +249,17 @@ classdef XYTarget < handle
       obj.IsDurationMet = obj.Cumulative >= obj.Duration;
       
       obj.last_frame = current_frame;
-      obj.was_valid_sample = is_valid_sample;      
+      
+      if ( is_valid_sample )
+        obj.last_valid_x = x;
+        obj.last_valid_y = y;
+        
+        if ( isnan(obj.last_valid_sample_timer) )
+          obj.last_valid_sample_timer = tic();
+        end
+        
+        obj.last_valid_frame = toc( obj.last_valid_sample_timer );
+      end
     end
   end
 end

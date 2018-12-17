@@ -1,7 +1,6 @@
 classdef State < handle
   
   properties (Access = public)
-    
     %   ENTRY -- Entry function.
     %
     %     Entry is a handle to a function that is called once upon entering
@@ -28,6 +27,34 @@ classdef State < handle
     %
     %     See also ptb.State.run, ptb.State.Entry, ptb.State.Exit
     Loop = @(varargin) 1;
+    
+    %   BYPASS -- Bypass function.
+    %
+    %     Bypass is a handle to a function is called instead of the usual
+    %     sequence of Entry, Loop, and Exit functions, in the event that
+    %     IsBypassed is true. The function should accept a single argument 
+    %     -- the state object instance -- and return no outputs.
+    %
+    %     Bypass is mainly useful when the state object is run by a Task
+    %     object as part of a sequence. In this case, Bypass can be used to
+    %     e.g. establish a direct link between adjacent states, skipping
+    %     over the bypassed state.
+    %
+    %     See also ptb.State, ptb.State.IsBypassed, ptb.Task, ptb.State.Entry
+    Bypass = @(varargin) 1;
+    
+    %   ISBYPASSED -- True if Bypassed function should be called.
+    %
+    %     IsBypassed is a logical scalar value indicating whether the state
+    %     object's Bypass function should be called -- in lieu of the usual
+    %     sequence of Entry, Loop, and Exit functions -- when the state is
+    %     run.
+    %
+    %     Setting this value within the Entry, Loop, or Exit functions will
+    %     not have an effect until the next time the state is run.
+    %
+    %     See also ptb.State, ptb.State.Bypass
+    IsBypassed = false;
     
     %   DURATION -- Duration of the state in seconds.
     %
@@ -80,6 +107,7 @@ classdef State < handle
     exit_conditions = {};
     entered = false;
     exited = false;
+    should_escape = false;
     
     clock;
   end
@@ -139,9 +167,19 @@ classdef State < handle
       obj.Loop = v;
     end
     
+    function set.Bypass(obj, v)
+      validate_state_function( obj, v, 'Bypass' );
+      obj.Bypass = v;
+    end
+    
     function set.Name(obj, v)
       validateattributes( v, {'char', 'string'}, {'scalartext'}, mfilename, 'Name' );
       obj.Name = char( v );
+    end
+    
+    function set.IsBypassed(obj, v)
+      validateattributes( v, {'logical'}, {'scalar'}, mfilename, 'IsBypassed' );
+      obj.IsBypassed = v;
     end
     
     function set.LogEntry(obj, v)
@@ -184,6 +222,11 @@ classdef State < handle
       %     See also ptb.State.add_exit_condition, ptb.State.Entry,
       %       ptb.Task
       
+      if ( obj.IsBypassed )
+        bypass( obj );
+        return
+      end
+      
       entry( obj );
       
       is_first = true;
@@ -217,6 +260,22 @@ classdef State < handle
       catch err
         throw( err );
       end
+    end
+    
+    function escape(obj)
+      
+      %   ESCAPE -- Proceed to state exit.
+      %
+      %     escape( obj ), when called from the Entry or Loop functions,
+      %     causes the state's Exit function to be called on the next
+      %     update of the state.
+      %
+      %     Note that if escape() is called in the Entry function, the Loop
+      %     function is still called once before the Exit function.
+      %
+      %     See also ptb.State, ptb.State.Entry
+      
+      obj.should_escape = true;
     end
     
     function set_logging(obj, tf)
@@ -270,6 +329,9 @@ classdef State < handle
       %     exit_on_key_down( obj, key_code ) sets the state to exit as
       %     soon as the key given by `key_code` is down.
       %
+      %     exit_on_key_down( obj ) sets the state to exist as soon as the
+      %     escape key is pressed.
+      %
       %     EXAMPLE //
       %
       %     state = ptb.State();
@@ -282,6 +344,10 @@ classdef State < handle
       %     IN:
       %       - `key_code` (numeric)
       
+      if ( nargin < 2 )
+        key_code = ptb.util.get_escape_key_code();
+      end
+      
       condition = @() ptb.util.is_key_down( key_code );
       add_exit_condition( obj, condition );
     end
@@ -292,8 +358,10 @@ classdef State < handle
       reset( obj.clock );
       
       if ( nargin < 2 || clear_next )
-        obj.next_state = [];
+        clear_next_state( obj );
       end
+      
+      obj.should_escape = false;
       
       if ( obj.LogEntry )
         fprintf( '\n Entered: %s', obj.Name );
@@ -310,8 +378,20 @@ classdef State < handle
       end
     end
     
+    function bypass(obj)
+      reset( obj.clock );
+      
+      clear_next_state( obj );
+      
+      obj.Bypass( obj );
+    end
+    
     function loop(obj)
       obj.Loop( obj );
+    end
+    
+    function clear_next_state(obj)
+      obj.next_state = [];
     end
     
     function validate_state_function(obj, v, kind)  %#ok
@@ -331,6 +411,11 @@ classdef State < handle
     function tf = should_exit(obj)
       
       %   SHOULD_EXIT -- True if the state should exit.
+      
+      if ( obj.should_escape )
+        tf = true;
+        return
+      end
       
       tf = false;
       conditions = obj.exit_conditions;

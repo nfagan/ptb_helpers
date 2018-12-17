@@ -49,6 +49,11 @@ classdef Task < ptb.State
       %     IN:
       %       - `state` (ptb.State, [])
       
+      if ( obj.IsBypassed )
+        bypass( obj );
+        return
+      end
+      
       if ( nargin == 1 )
         state = [];
       end
@@ -56,29 +61,29 @@ classdef Task < ptb.State
       set_next( obj, state );
       
       entry( obj, false );  % false to not clear the next state
-      called_loop = false;
       
-      if ( should_exit(obj) )
-        % If the task should immediately exit, make sure we call the loop
-        % function.
-        loop( obj );
-        exit( obj );
-        return %#ok
-      end
+      called_state_loop = false;
+      called_task_loop = false;
       
       while ( ~should_exit(obj) )
         loop( obj );
         
         active_state = obj.next_state;
         
+        if ( active_state.IsBypassed )
+          bypass( active_state );
+          set_next( obj, active_state.next_state );
+          continue;
+        end
+        
         if ( obj.is_new_state )
           entry( active_state );
           obj.is_new_state = false;
-          called_loop = false;
+          called_state_loop = false;
         end
         
         if ( should_exit(active_state) )
-          if ( ~called_loop )
+          if ( ~called_state_loop )
             % Make sure we call the loop function at least once.
             loop( active_state );
           end
@@ -87,8 +92,14 @@ classdef Task < ptb.State
           set_next( obj, active_state.next_state ); %#ok
         else
           loop( active_state );
-          called_loop = true;
+          called_state_loop = true;
         end
+        
+        called_task_loop = true;
+      end
+      
+      if ( ~called_task_loop )
+        loop( obj );
       end
       
       exit( obj );

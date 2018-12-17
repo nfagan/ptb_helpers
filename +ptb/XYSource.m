@@ -1,10 +1,41 @@
 classdef XYSource < handle
   
   properties (GetAccess = public, SetAccess = protected)
+    %   X -- Latest X coordinate.
+    %
+    %     X is a read-only double scalar giving the latest X-pixel
+    %     coordinate.
+    %
+    %     See also ptb.XYSource, ptb.XYSource.Y
     X = nan;
+    
+    %   Y -- Latest Y coordinate.
+    %
+    %     Y is a read-only double scalar giving the latest Y-pixel
+    %     coordinate.
+    %
+    %     See also ptb.XYSource, ptb.XYSource.X, ptb.XYSource.IsNewSample
     Y = nan;
     
+    %   ISNEWSAMPLE -- True if (X, Y) coordinates were updated.
+    %
+    %     IsNewSample is a read-only logical scalar indicating whether the
+    %     current X and Y coordinates were updated during the call to
+    %     `update`.
+    %
+    %     See also ptb.XYSource, ptb.XYSource.IsValidSample, 
+    %       ptb.XYSource.update
     IsNewSample = false;
+    
+    %   ISVALIDSAMPLE -- True if current (X, Y) coordinates are valid.
+    %
+    %     IsValidSample is a read-only logical scalar indicating whether
+    %     the current X and Y coordinates are valid. What it means for a
+    %     sample to be valid is determined by the subclassing object --
+    %     for example, to an EyelinkSource, a valid sample is one that is
+    %     not nan.
+    %
+    %     See also ptb.XYSource, ptb.XYSource.IsNewSample, ptb.XYSource.update
     IsValidSample = false;
   end
   
@@ -16,7 +47,8 @@ classdef XYSource < handle
       %     This class serves as an interface, and is not meant to be
       %     directly instantiated.
       %
-      %     See also ptb.MouseSource, ptb.EyelinkSource
+      %     See also ptb.MouseSource, ptb.EyelinkSource, ptb.XYSource.X,
+      %       ptb.XYSource.IsValidSample
       
     end
   end
@@ -27,15 +59,15 @@ classdef XYSource < handle
       %   UPDATE -- Update gaze data to latest sample, if available.
       %
       %     update( obj ) attempts to fetch the latest gaze sample from
-      %     Eyelink and assign it to the X and Y coordinates of the 
-      %     EyelinkSource `obj`. If the EyelinkSource is not recording, or 
-      %     if no new sample is available, the X and Y coordinates remain 
-      %     unchanged.
+      %     the underlying source and assign it to the X and Y coordinates 
+      %     of `obj`. If no new sample is available, the X and Y 
+      %     coordinates remain unchanged.
       %
-      %     See also ptb.EyelinkSource, ptb.EyelinkSource.initialize
+      %     After calling this function, the IsNewSample and IsValidSample
+      %     properties can be used to assess the state of the sample.
       %
-      %     OUT:
-      %       - `is_new_sample` (logical)
+      %     See also ptb.EyelinkSource, ptb.MouseSource, ptb.XYSource,
+      %       ptb.XYSource.IsNewSample, ptb.XYSource.IsValidSample
       
       obj.IsNewSample = false;
       
@@ -43,19 +75,13 @@ classdef XYSource < handle
         return
       end
       
-      obj.IsNewSample = true;
-      
       [x, y, success] = get_latest_sample( obj );
-      
-      if ( ~success )
-        obj.IsValidSample = false;
-        return
-      end
       
       obj.X = x;
       obj.Y = y;
       
-      obj.IsValidSample = true;
+      obj.IsValidSample = success;
+      obj.IsNewSample = true;
     end
   end
   
