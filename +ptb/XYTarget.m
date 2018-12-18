@@ -1,6 +1,17 @@
 classdef XYTarget < handle
   
   properties (Access = public)
+    %   SAMPLER -- Source of processed (X, Y) coordinates.
+    %
+    %     Sampler is a handle to an object that is a subclass of 
+    %     ptb.XYSampler, and is used to obtain processed (X, Y)
+    %     coordinates. In the simplest case, it can be a wrapper around a
+    %     ptb.XYSource that copies the coordinates of that source, without 
+    %     modifying them.
+    %
+    %     See also ptb.XYSampler, ptb.samplers.Pass, ptb.samplers.Missing
+    Sampler;
+    
     %   BOUNDS -- Object defining target boundaries.
     %
     %     Bounds is a handle to an object that is a subclass of
@@ -24,15 +35,6 @@ classdef XYTarget < handle
     %       ptb.bounds.Always, ptb.bounds.Never, ptb.XYTarget.IsInBounds
     Bounds;
     
-    %   SOURCE -- Source of (X, Y) coordinates.
-    %
-    %     Source is a handle to an object that is a subclass of
-    %     ptb.XYSource, such as ptb.MouseSource or ptb.EyelinkSource. It is
-    %     the object from which (X, Y) coordinates are drawn.
-    %
-    %     See also ptb.XYTarget, ptb.XYSource, ptb.XYTarget.Duration
-    Source;
-    
     %   DURATION -- Amount of cumulative time to be spent in bounds.
     %
     %     Duration is a non-negative scalar number indicating the amount of
@@ -41,34 +43,6 @@ classdef XYTarget < handle
     %
     %     See also ptb.XYTarget, ptb.XYTarget.IsDurationMet
     Duration = inf;
-    
-    %   ALLOWMISSING -- Reuse expired sample if no valid sample is available.
-    %
-    %     AllowMissing is a logical flag indicating whether to re-use the
-    %     most recent sample from Source in the case that the current
-    %     sample is invalid. Default is false.
-    %
-    %     AllowMissing is useful when Source can report brief intervals of
-    %     invalid data / loss of signal, such as during a blink.
-    %
-    %     See also ptb.XYTarget, ptb.XYTarget.MaxMissingDuration, 
-    %       ptb.XYTarget.Source
-    AllowMissing = false;
-    
-    %   MAXMISSINGDURATION -- Maximum missing duration in seconds.
-    %
-    %     MaxMissingDuration is a non-negative numeric scalar giving the
-    %     maximum number of seconds over which an expired sample can be
-    %     re-used, in the case that the current sample is invalid. Only has
-    %     an effect if AllowMissing is true. Default is 0.
-    %
-    %     For example, if AllowMissing is true, and MaxMissingDuration is
-    %     0.1, then, at maximum, the object will use the most recent sample
-    %     from Source for 0.1 seconds. If 0.1 seconds elapse without a new
-    %     valid sample, then IsInBounds will be false.
-    %
-    %     See also ptb.XYTarget, ptb.XYTarget.AllowMissing
-    MaxMissingDuration = 0;
   end
   
   properties (GetAccess = public, SetAccess = private)
@@ -104,44 +78,38 @@ classdef XYTarget < handle
   properties (Access = private)
     last_frame = nan;
     cumulative_timer;
-    
-    last_valid_sample_timer = nan;
-    
-    last_valid_x = nan;
-    last_valid_y = nan;
-    last_valid_frame = nan;
   end
   
   methods
-    function obj = XYTarget(source, bounds)
+    function obj = XYTarget(sampler, bounds)
       
       %   XYTARGET -- Create XYTarget object instance.
       %
       %     XYTarget objects keep track of whether and for how long an 
       %     (X, Y) coordinate is in bounds of a target. 
       %
-      %     obj = ptb.XYTarget( source ); creates an XYTarget whose
-      %     coordinates are drawn from `source`, a subclass of ptb.XYSource
-      %     such as ptb.MouseSource. The Bounds property of `obj`, which
-      %     tests whether a coordinate from `source` is in bounds, is set
-      %     to an object that never returns true.
+      %     obj = ptb.XYTarget( sampler ); creates an XYTarget whose
+      %     coordinates are drawn from `sampler`, a subclass of
+      %     ptb.XYSampler such as ptb.samplers.Pass. The Bounds property of 
+      %     `obj`, which tests whether a coordinate from `sampler` is in 
+      %     bounds, is set to an object that never returns true.
       %
       %     obj = ptb.XYTarget( ..., bounds ) creates the object and sets
       %     the Bounds property to `bounds`. `bounds` must be a subclass of
       %     ptb.XYBounds.
       %
-      %     See also ptb.XYTarget.Bounds, ptb.XYTarget.Source,
+      %     See also ptb.XYTarget.Bounds, ptb.XYTarget.Sampler,
       %       ptb.XYTarget.Duration, ptb.XYBounds
       %
       %     IN:
-      %       - `source` (ptb.XYSource)
+      %       - `sampler` (ptb.XYSampler)
       %       - `bounds` (ptb.XYBounds) |OPTIONAL|
       
       if ( nargin < 2 )
         bounds = ptb.bounds.Never();
       end
       
-      obj.Source = source;
+      obj.Sampler = sampler;
       obj.Bounds = bounds;
       
       obj.cumulative_timer = tic;
@@ -152,20 +120,9 @@ classdef XYTarget < handle
       obj.Bounds = v;
     end
     
-    function set.Source(obj, v)
-      validateattributes( v, {'ptb.XYSource'}, {'scalar'}, mfilename, 'Source' );
-      obj.Source = v;
-    end
-    
-    function set.AllowMissing(obj, v)
-      validateattributes( v, {'numeric', 'logical'}, {'scalar'}, mfilename, 'AllowMissing' );
-      obj.AllowMissing = logical( v );
-    end
-    
-    function set.MaxMissingDuration(obj, v)
-      validateattributes( v, {'numeric'}, {'scalar', 'nonnegative'} ...
-        , mfilename, 'MaxMissingDuration' );
-      obj.MaxMissingDuration = double( v );
+    function set.Sampler(obj, v)
+      validateattributes( v, {'ptb.XYSampler'}, {'scalar'}, mfilename, 'Source' );
+      obj.Sampler = v;
     end
     
     function set.Duration(obj, v)
@@ -200,37 +157,14 @@ classdef XYTarget < handle
       %
       %     See also ptb.XYTarget, ptb.XYTarget.Source
       
-      x = obj.Source.X;
-      y = obj.Source.Y;
-      is_valid_sample = obj.Source.IsValidSample;
+      update( obj.Sampler );
       
-      if ( obj.AllowMissing && ~is_valid_sample )
-        % Missing data is allowed, and this is a missing sample.
+      is_useable_sample = obj.Sampler.IsValidSample;
+      
+      if ( is_useable_sample )
+        x = obj.Sampler.X;
+        y = obj.Sampler.Y;
         
-        if ( ~isnan(obj.last_valid_sample_timer) )
-          current_missing_frame = toc( obj.last_valid_sample_timer );
-          elapsed_missing = current_missing_frame - obj.last_valid_frame;
-          
-          should_test_bounds = false;
-          
-          if ( elapsed_missing <= obj.MaxMissingDuration )            
-            % If we're within the window of MaxMissingDuration, test bounds
-            % using the most-recent valid gaze position.
-            x = obj.last_valid_x;
-            y = obj.last_valid_y;
-            
-            should_test_bounds = true;
-          end
-        else
-          % No valid sample has yet been recorded, so can't re-use existing
-          % coordinates
-          should_test_bounds = false;
-        end
-      else
-        should_test_bounds = is_valid_sample;
-      end
-      
-      if ( should_test_bounds )
         is_in_bounds = test( obj.Bounds, x, y );
       else
         is_in_bounds = false;
@@ -249,17 +183,6 @@ classdef XYTarget < handle
       obj.IsDurationMet = obj.Cumulative >= obj.Duration;
       
       obj.last_frame = current_frame;
-      
-      if ( is_valid_sample )
-        obj.last_valid_x = x;
-        obj.last_valid_y = y;
-        
-        if ( isnan(obj.last_valid_sample_timer) )
-          obj.last_valid_sample_timer = tic();
-        end
-        
-        obj.last_valid_frame = toc( obj.last_valid_sample_timer );
-      end
     end
   end
 end
