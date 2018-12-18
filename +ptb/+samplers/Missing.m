@@ -161,7 +161,6 @@ classdef Missing < ptb.XYSampler
   end
   
   methods (Access = private)
-    
     function invalidate(obj)
       obj.last_valid_frame = nan;
       obj.last_valid_sample_timer = nan;
