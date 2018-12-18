@@ -129,20 +129,18 @@ classdef Missing < ptb.XYSampler
         
         is_useable_sample = true;
         
-      elseif ( obj.AllowMissing && has_source )
-        if ( obj.was_one_valid_sample )
-          current_missing_frame = toc( obj.last_valid_sample_timer );
-          elapsed_missing = current_missing_frame - obj.last_valid_frame;
-          
-          if ( elapsed_missing <= obj.MaxMissingDuration )            
-            % If we're within the window of MaxMissingDuration, use the
-            % most-recent valid gaze position
-            x = obj.last_valid_x;
-            y = obj.last_valid_y;
-            
-            is_missing_sample = true;
-            is_useable_sample = true;
-          end
+      elseif ( obj.AllowMissing && has_source && obj.was_one_valid_sample )        
+        current_missing_frame = toc( obj.last_valid_sample_timer );
+        elapsed_missing = current_missing_frame - obj.last_valid_frame;
+
+        if ( elapsed_missing <= obj.MaxMissingDuration )            
+          % If we're within the window of MaxMissingDuration, use the
+          % most-recent valid gaze position
+          x = obj.last_valid_x;
+          y = obj.last_valid_y;
+
+          is_missing_sample = true;
+          is_useable_sample = true;
         end
       end
       
