@@ -1,4 +1,4 @@
-classdef Pipeline < handle
+classdef ComponentUpdater < handle
   
   properties (Access = private, Constant = true)
     aggregate_classes = { 'ptb.XYSource', 'ptb.XYSampler', 'ptb.XYTarget' };
@@ -12,11 +12,36 @@ classdef Pipeline < handle
   end
   
   methods
-    function obj = Pipeline()
+    function obj = ComponentUpdater()
       
-      %   PIPELINE -- Create Pipeline object instance.
+      %   UPDATER -- Create ComponentUpdater object instance.
       %
-      %     
+      %     obj = ptb.ComponentUpdater() creates an ComponentUpdater object 
+      %     -- a utility that updates an arbitrary number of source, 
+      %     sampler, and target objects, in logical order.
+      %
+      %     Calling `update` on the object updates all sources, then all
+      %     samplers, and finally all targets, avoiding potential coding
+      %     errors.
+      %
+      %     After creating the object, use the `add_component` method to
+      %     add a source, sampler, or target object to the corresponding
+      %     list of to-be-updated components.
+      %
+      %     EXAMPLE //
+      %
+      %       mouse = ptb.MouseSource();
+      %       sampler = ptb.samplers.Pass( mouse );
+      %       updater = ptb.ComponentUpdater();
+      %
+      %       add_components( updater, mouse, sampler );
+      %
+      %       while ~ptb.util.is_esc_down()
+      %         update( updater );
+      %       end
+      %
+      %     See also ptb.ComponentUpdater.add_component, 
+      %       ptb.ComponentUpdater.Sources
       
     end
   end
@@ -28,7 +53,7 @@ classdef Pipeline < handle
       %
       %     add_component( obj, component ); adds `component` to the current
       %     list of ptb.XYSources, ptb.XYSamplers, or ptb.XYTargets, 
-      %     according to the class of `component` -- so long as it has not 
+      %     according to the class of `component`, so long as it has not 
       %     already been added.
       %
       %     was_added = add_component(...) returns whether `component` was
@@ -37,7 +62,8 @@ classdef Pipeline < handle
       %     An error is thrown if `component` is not of one of the above
       %     types.
       %
-      %     See also ptb.Pipeline, ptb.Pipeline.add_components, ptb.XYSource
+      %     See also ptb.ComponentUpdater, 
+      %       ptb.ComponentUpdater.add_components, ptb.XYSource
       %
       %     IN:
       %       - `component` (ptb.XYSource, ptb.XYSampler, ptb.XYTarget)
@@ -51,10 +77,8 @@ classdef Pipeline < handle
       was_added = false;
       
       for i = 1:N
-        [class_matched, was_added] = check_add_component( obj, component ...
-          , classes{i}, props{i} );
-        
-        if ( class_matched )
+        if ( isa(component, classes{i}) )
+          was_added = check_add_component( obj, component, props{i} );
           return
         end
       end
@@ -71,7 +95,7 @@ classdef Pipeline < handle
       %     number of updateable components to `obj`. An error is thrown,
       %     and no components added, if any input is an invalid type.
       %
-      %     See also ptb.Pipeline.add_component, ptb.Pipeline
+      %     See also ptb.ComponentUpdater.add_component, ptb.ComponentUpdater
       
       for i = 1:numel(varargin)
         validateattributes( varargin{i}, obj.aggregate_classes, {} ...
@@ -93,7 +117,7 @@ classdef Pipeline < handle
       %     in logical order. Sources are updated first, followed by
       %     samplers, followed by targets.
       %
-      %     See also ptb.Pipeline
+      %     See also ptb.ComponentUpdater
       
       update_component_set( obj, obj.Sources );
       update_component_set( obj, obj.Samplers );
@@ -102,21 +126,15 @@ classdef Pipeline < handle
   end
   
   methods (Access = private)
-    function [class_matches, was_added] = ...
-        check_add_component(obj, component, kind, aggregate)
+    function was_added = check_add_component(obj, component, aggregate)
       
-      class_matches = false;
-      was_added = false;
-      
-      if ( ~isa(component, kind) )
-        return;
-      end
-      
-      class_matches = true;
-      
+      %   CHECK_ADD_COMPONENT -- Add component if not already added.
+            
       if ( ~any(cellfun(@(x) x == component, obj.(aggregate))) )
         obj.(aggregate){end+1} = component;
         was_added = true;
+      else
+        was_added = false;
       end
     end
     

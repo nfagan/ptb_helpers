@@ -1,5 +1,4 @@
-classdef Window < handle
-  
+classdef Window < handle  
   properties (Access = public)
     %   INDEX -- Index of the monitor on which to open the Window.
     %
@@ -13,14 +12,19 @@ classdef Window < handle
     %     See also ptb.Window, ptb.Window.IsOpen, ptb.Window.Rect
     Index = 0;
     
-    %   RECT -- Size and position of the Window.
+    %   RECT -- Bounding Rect of the window.
     %
-    %     Rect is a 4-element vector that gives the minimum x, minimum y,
-    %     maximum x, and maximum y coordinates of the Window, respectively.
+    %     Rect is an object that gives the minimum x, minimum y, maximum x,
+    %     and maximum y coordinates of the Window, respectively. It is of
+    %     class ptb.Rect.
     %     
-    %     See also ptb.Window, ptb.Window.Width, ptb.Window.Height,
-    %       ptb.Window.set_width, ptb.Window.set_height
-    Rect = [];
+    %     See also ptb.Rect, ptb.Window, ptb.Window.Width, 
+    %       ptb.Window.Height, ptb.Window.set_width, ptb.Window.set_height
+    Rect = ptb.Rect.Configured( ...
+          'IsNonNan',       true ...
+        , 'IsNonNegative',  true ...
+        , 'Empty',          true ...
+    );
     
     %   BACKGROUNDCOLOR -- Background color of the Window.
     %
@@ -104,11 +108,6 @@ classdef Window < handle
       %       ptb.Window.BackgroundColor, ptb.Window.IsOpen,
       %       ptb.Window.open
       
-      try
-        obj = shared_utils.general.parseobject( obj, varargin );
-      catch err
-        throw( err );
-      end
     end
     
     function set.Index(obj, index)
@@ -142,33 +141,24 @@ classdef Window < handle
         throw( err );
       end
       
-      if ( isempty(rect) )
-        rect = [];
-      else
-        classes = { 'numeric' };
-        attrs = { 'nonnegative', 'vector', 'numel', 4 };
+      try
+        tmp_rect = obj.Rect;
         
-        try
-          validateattributes( rect, classes, attrs, mfilename, 'Rect' );
-        catch err
-          throw( err );
+        if ( isempty(tmp_rect) && ~isempty(rect) )
+          tmp_rect = get_default_rect( obj );
+        elseif ( ~isempty(tmp_rect) && isempty(rect) )
+          tmp_rect(1) = [];
         end
         
-        if ( rect(3) <= rect(1) )
-          error( 'Maximum X must be greater than minimum X.' );
-        end
-        
-        if ( rect(4) <= rect(2) )
-          error( 'Maximum Y must be greater than minimum Y.' );
-        end
-        
-        rect = double( rect(:)' );
+        obj.Rect = set( tmp_rect, rect );
+      catch err
+        throw( err );
       end
       
-      obj.Rect = rect;
+      elements = get( obj.Rect );
       
-      set_center_from_rect( obj, rect );
-      set_dimensions_from_rect( obj, rect );
+      set_center_from_rect( obj, elements );
+      set_dimensions_from_rect( obj, elements );
     end
     
     function set.BackgroundColor(obj, bc)
@@ -247,18 +237,9 @@ classdef Window < handle
       
       set_error_if_open( obj, 'width' );
       
-      validateattributes( w, {'numeric'}, {'scalar', 'positive'} ...
-        , mfilename, 'width' );
+      rect = require_rect( obj );
       
-      rect = obj.Rect;
-      
-      if ( isempty(obj.Rect) )
-        rect = [ 0, 0, 0, 1 ];
-      end
-      
-      rect(3) = rect(1) + double( w );
-      
-      obj.Rect = rect;
+      obj.Rect = set_x_extent( rect, w );
     end
     
     function set_height(obj, h)
@@ -283,18 +264,9 @@ classdef Window < handle
       
       set_error_if_open( obj, 'height' );
       
-      validateattributes( h, {'numeric'}, {'scalar', 'positive'} ...
-        , mfilename, 'height' );
+      rect = require_rect( obj );
       
-      rect = obj.Rect;
-      
-      if ( isempty(obj.Rect) )
-        rect = [ 0, 0, 1, 0 ];
-      end
-      
-      rect(4) = rect(2) + double( h );
-      
-      obj.Rect = rect;
+      obj.Rect = set_y_extent( rect, h );
     end
     
     function set_dimensions(obj, w, h)
@@ -374,8 +346,10 @@ classdef Window < handle
         error( 'The window is already open.' );
       end
       
+      rect = get( obj.Rect );
+      
       try
-        [handle, rect] = Screen( 'OpenWindow', obj.Index, obj.BackgroundColor, obj.Rect );
+        [handle, rect] = Screen( 'OpenWindow', obj.Index, obj.BackgroundColor, rect );
       catch err
         throw( err );        
       end
@@ -417,8 +391,22 @@ classdef Window < handle
   
   methods (Access = private)
     
+    function r = require_rect(obj)
+      if ( isempty(obj.Rect) )
+        r = get_default_rect( obj );
+      else
+        r = obj.Rect;
+      end
+    end
+    
+    function dflt = get_default_rect(obj)
+      dflt = ptb.Rect.Configured( ...
+          'IsNonNan',       true ...
+        , 'IsNonNegative',  true ...
+      );
+    end
+    
     function set_center_from_rect(obj, rect)
-      
       if ( isempty(rect) )
         obj.Center = [];
         return
@@ -449,7 +437,6 @@ classdef Window < handle
         error( 'Cannot set the "%s" property once IsOpen is true.', prop );
       end
     end
-    
   end
   
 end

@@ -1,20 +1,15 @@
-classdef MatchOldRectangle < ptb.XYBounds
+classdef Rect < ptb.XYBounds
   
   properties (Access = public)
-    %   RECTANGLE -- Rectangle object defining the underlying bounds-rect.
+    %   BASERECT -- Base bounds-rect.
     %
-    %     Rectangle is a handle to a (non-ptb-prefixed) Rectangle object
-    %     from which the initial bounding rect will be drawn. If no X or Y
-    %     offset is applied, and Padding is 0 (as is the default), the
-    %     `test` function will indicate whether a given (X, Y) coordinate
-    %     is exactly in bounds of the Rectangle.
+    %     BaseRect is an object that defines the default bounding rect of
+    %     the bounds object, before padding or offsets are applied. It must
+    %     be an object that inherits from ptb.RectPrimitive, such as
+    %     ptb.Rect
     %
-    %     Rectangle can also be set to the empty matrix ([]), in which case
-    %     the bounding rect is (somewhat uselessly) a vector of zeros.
-    %
-    %     See also ptb.bounds.MatchOldRectangle, ptb.XYBounds,
-    %       ptb.bounds.MatchOldRectangle.Padding
-    Rectangle;
+    %     See also ptb.Rect, ptb.bounds.Rect
+    BaseRect;
     
     %   PADDING -- Padding to be applied to the bounds-rect.
     %
@@ -36,7 +31,7 @@ classdef MatchOldRectangle < ptb.XYBounds
     %     implicitly sets padding to [-5, -10, 5, 10], for a padding of
     %     10px in the X dimension and 20px in the Y dimension.
     %
-    %     See also ptb.bounds.MatchOldRectangle
+    %     See also ptb.bounds.Rect
     Padding;
     
     %   XOFFSET -- Shift bounding-rect in X dimension.
@@ -47,8 +42,8 @@ classdef MatchOldRectangle < ptb.XYBounds
     %     example, XOffset = 20 shifts the bounds 20px to the right of the
     %     underying Rectangle's bounds. Default is 0.
     %
-    %     See also ptb.bounds.MatchOldRectangle.XOffset, 
-    %       ptb.bounds.MatchOldRectangle.Padding
+    %     See also ptb.bounds.Rect.XOffset, 
+    %       ptb.bounds.Rect.Padding
     XOffset = 0;
     
     %   YOFFSET -- Shift bounding-rect in Y dimension.
@@ -60,37 +55,25 @@ classdef MatchOldRectangle < ptb.XYBounds
     %     to the underying Rectangle's bounds (downwards, because the
     %     Y-axis in Psychtoolbox is inverted).
     %
-    %     See also ptb.bounds.MatchOldRectangle.Padding
+    %     See also ptb.bounds.Rect.Padding
     YOffset = 0;
   end
   
   methods
-    function obj = MatchOldRectangle(r)
+    function obj = Rect(base_rect)
       
-      %   MATCHOLDRECTANGLE -- Use bounds drawn from Rectangle.
+      %   Rect -- Use bounds that are rect.
       %
-      %     obj = ptb.bounds.MatchOldRectangle( r ); constructs an object
-      %     that tests whether an (X, Y) coordinate is in bounds of a
-      %     rectangle given by `r`. `r` is a handle to a Rectangle object.
-      %
-      %     See also Rectangle, ptb.bounds.MatchOldRectangle.Padding
-      
-      if ( nargin < 1 )
-        r = [];
-      end
+      %     See also ptb.bounds.Rect.Padding
       
       obj = obj@ptb.XYBounds();
-      obj.Rectangle = r;
       obj.Padding = zeros( 1, 4 );
-    end
-    
-    function set.Rectangle(obj, v)
-      if ( isempty(v) )
-        obj.Rectangle = [];
-      else
-        validateattributes( v, {'Rectangle'}, {'scalar'}, mfilename, 'Rectangle' );
-        obj.Rectangle = v;
+      
+      if ( nargin == 0 )
+        base_rect = ptb.Rect();
       end
+      
+      obj.BaseRect = base_rect;
     end
     
     function set.XOffset(obj, v)
@@ -124,6 +107,13 @@ classdef MatchOldRectangle < ptb.XYBounds
         obj.Padding = double( v(:)' );
       end
     end
+    
+    function set.BaseRect(obj, v)
+      classes = { 'ptb.RectPrimitive' };
+      validateattributes( v, classes, {'scalar'}, mfilename, 'BaseRect' );
+      
+      obj.BaseRect = v;      
+    end
   end
   
   methods (Access = public)
@@ -137,16 +127,12 @@ classdef MatchOldRectangle < ptb.XYBounds
       %     an (x, y) coordinate is in bounds. This rect incorporates the
       %     XOffset, YOffset, and Padding properties.
       %
-      %     See also ptb.bounds.XYBounds, ptb.bounds.MatchOldRectangle
+      %     See also ptb.bounds.XYBounds, ptb.bounds.Rect
       %
       %     OUT:
       %       - `bounds` (double)
       
-      if ( isempty(obj.Rectangle) )
-        rect = zeros( 1, 4 );
-      else
-        rect = obj.Rectangle.vertices;
-      end
+      rect = get( obj.BaseRect );
       
       x1 = rect(1) + obj.XOffset + obj.Padding(1);
       x2 = rect(3) + obj.XOffset + obj.Padding(3);
@@ -161,7 +147,7 @@ classdef MatchOldRectangle < ptb.XYBounds
       
       %   TEST -- True if (x, y) position is in bounds.
       %
-      %     See also ptb.bounds.MatchOldRectangle.get_bounding_rect,
+      %     See also ptb.bounds.Rect.get_bounding_rect,
       %       ptb.XYBounds
       
       rect = get_bounding_rect( obj );
@@ -174,6 +160,4 @@ classdef MatchOldRectangle < ptb.XYBounds
       tf = x >= x1 && x <= x2 && y >= y1 && y <= y2;
     end
   end
-  
-  
 end
